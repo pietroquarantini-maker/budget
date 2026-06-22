@@ -1,0 +1,281 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0">
+<title>Budget Familiare</title>
+<style>
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f0ede8; color: #1c1c2e; min-height: 100vh; }
+header { background: #1c1c2e; color: #fff; padding: 18px 16px 14px; position: sticky; top: 0; z-index: 10; }
+.header-inner { max-width: 600px; margin: 0 auto; display: flex; justify-content: space-between; align-items: flex-start; }
+.header-title { font-size: 19px; font-weight: 700; }
+.header-sub { font-size: 12px; color: #8892a4; margin-top: 3px; }
+.header-budget { text-align: right; }
+.header-budget-label { font-size: 11px; color: #8892a4; }
+.header-budget-amount { font-size: 20px; font-weight: 700; margin-top: 2px; }
+main { max-width: 600px; margin: 0 auto; padding: 16px 14px 40px; }
+.stats { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 10px; margin-bottom: 14px; }
+.card { background: #fff; border-radius: 12px; padding: 12px 13px; box-shadow: 0 1px 3px rgba(0,0,0,0.07); }
+.card-label { font-size: 10px; font-weight: 700; text-transform: uppercase; letter-spacing: 0.6px; color: #9aa0ac; margin-bottom: 5px; }
+.card-value { font-size: 16px; font-weight: 700; }
+.card-sub { font-size: 10px; color: #aaa; margin-top: 3px; }
+.card-residuo { border-top: 3px solid #16a34a; }
+.card-residuo.warning { border-top-color: #d97706; }
+.card-residuo.danger { border-top-color: #e53e3e; }
+.progress-card { margin-bottom: 14px; }
+.progress-header { display: flex; justify-content: space-between; font-size: 12px; color: #888; margin-bottom: 7px; }
+.progress-track { height: 7px; background: #e8e4de; border-radius: 99px; overflow: hidden; }
+.progress-fill { height: 100%; border-radius: 99px; transition: width 0.5s ease; background: #16a34a; }
+.progress-fill.warning { background: #d97706; }
+.progress-fill.danger { background: #e53e3e; }
+.form-card { margin-bottom: 18px; }
+.form-card h2 { font-size: 14px; font-weight: 700; margin-bottom: 12px; }
+.form-row { display: flex; gap: 8px; margin-bottom: 8px; }
+input[type="text"], input[type="date"], input[type="number"] { width: 100%; padding: 10px 11px; border: 1.5px solid #e2e8f0; border-radius: 8px; font-size: 14px; font-family: inherit; outline: none; background: #fafafa; }
+input:focus { border-color: #1c1c2e; background: #fff; }
+.btn-add { width: 100%; padding: 11px; background: #1c1c2e; color: #fff; border: none; border-radius: 8px; font-size: 14px; font-weight: 700; cursor: pointer; margin-top: 2px; }
+.btn-add:disabled { opacity: 0.5; cursor: not-allowed; }
+.list-header { font-size: 14px; font-weight: 700; margin-bottom: 10px; color: #444; }
+.list-header span { color: #aaa; font-weight: 400; font-size: 12px; }
+.expense-item { background: #fff; border-radius: 10px; padding: 11px 12px; display: flex; align-items: center; gap: 10px; box-shadow: 0 1px 3px rgba(0,0,0,0.06); margin-bottom: 7px; }
+.expense-info { flex: 1; min-width: 0; }
+.expense-desc { font-weight: 600; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.expense-date { font-size: 11px; color: #9aa0ac; margin-top: 2px; }
+.expense-amount { font-weight: 700; font-size: 14px; white-space: nowrap; }
+.btn-del { background: none; border: none; cursor: pointer; color: #d0d5dd; font-size: 16px; padding: 3px 5px; border-radius: 4px; line-height: 1; flex-shrink: 0; }
+.btn-del:hover { color: #e53e3e; }
+.empty { background: #fff; border-radius: 12px; padding: 36px 16px; text-align: center; color: #bbb; }
+.empty-icon { font-size: 30px; margin-bottom: 8px; }
+.empty p { font-size: 13px; }
+#toast { position: fixed; bottom: 24px; left: 50%; transform: translateX(-50%) translateY(20px); background: #1c1c2e; color: #fff; padding: 10px 20px; border-radius: 20px; font-size: 13px; font-weight: 600; box-shadow: 0 4px 16px rgba(0,0,0,0.2); opacity: 0; transition: opacity 0.3s, transform 0.3s; pointer-events: none; z-index: 100; white-space: nowrap; }
+#toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
+#toast.error { background: #e53e3e; }
+#modal-overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 50; align-items: center; justify-content: center; }
+#modal-overlay.open { display: flex; }
+.modal { background: #fff; border-radius: 14px; padding: 24px 20px; max-width: 340px; width: 90%; box-shadow: 0 12px 40px rgba(0,0,0,0.2); }
+.modal h3 { font-size: 15px; margin-bottom: 6px; }
+.modal p { font-size: 13px; color: #666; margin-bottom: 20px; }
+.modal-btns { display: flex; gap: 8px; }
+.modal-btns button { flex: 1; padding: 10px; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; border: none; }
+.btn-cancel { background: #f0ede8; color: #444; }
+.btn-confirm { background: #e53e3e; color: #fff; }
+.loading { text-align: center; padding: 30px; color: #aaa; font-size: 13px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="header-inner">
+    <div>
+      <div class="header-title">💶 Budget Familiare</div>
+      <div class="header-sub" id="month-label"></div>
+    </div>
+    <div class="header-budget">
+      <div class="header-budget-label">Budget mensile</div>
+      <div class="header-budget-amount">€ 1.800</div>
+    </div>
+  </div>
+</header>
+<main>
+  <div class="stats">
+    <div class="card">
+      <div class="card-label">Speso</div>
+      <div class="card-value" id="stat-spent">€ 0,00</div>
+    </div>
+    <div class="card card-residuo" id="card-residuo">
+      <div class="card-label">Residuo</div>
+      <div class="card-value" id="stat-residuo">€ 1.800,00</div>
+    </div>
+    <div class="card">
+      <div class="card-label">Al giorno</div>
+      <div class="card-value" id="stat-daily">€ 0,00</div>
+      <div class="card-sub" id="stat-days"></div>
+    </div>
+  </div>
+  <div class="card progress-card">
+    <div class="progress-header"><span>Utilizzo budget</span><span id="pct-label">0%</span></div>
+    <div class="progress-track"><div class="progress-fill" id="progress-fill" style="width:0%"></div></div>
+  </div>
+  <div class="card form-card">
+    <h2>Aggiungi spesa</h2>
+    <input type="text" id="inp-desc" placeholder="Descrizione (es. Spesa supermercato)" style="margin-bottom:8px">
+    <div class="form-row">
+      <input type="number" id="inp-amount" placeholder="Importo €" min="0" step="0.01" style="flex:1">
+      <input type="date" id="inp-date" style="flex:1">
+    </div>
+    <button class="btn-add" id="btn-add" onclick="addExpense()">+ Registra spesa</button>
+  </div>
+  <div class="list-header" id="list-header">Spese del mese</div>
+  <div id="expense-list"><div class="loading">Caricamento...</div></div>
+</main>
+<div id="toast"></div>
+<div id="modal-overlay">
+  <div class="modal">
+    <h3>Rimuovere questa spesa?</h3>
+    <p id="modal-desc"></p>
+    <div class="modal-btns">
+      <button class="btn-cancel" onclick="closeModal()">Annulla</button>
+      <button class="btn-confirm" onclick="confirmDelete()">Rimuovi</button>
+    </div>
+  </div>
+</div>
+<script>
+const API = "https://script.google.com/macros/s/AKfycby-2DhgXqr0woiUK3EL6SSNPFDnrM_gwOy6Sb__4U58KEgrA5p0NR6TkNswLeA673pw/exec";
+const BUDGET = 1800;
+let expenses = [];
+let deleteId = null;
+let cbCount = 0;
+
+function jsonp(params, onSuccess, onError) {
+  const cbName = "__cb" + (++cbCount);
+  const timeout = setTimeout(function() {
+    delete window[cbName];
+    if (onError) onError("timeout");
+  }, 10000);
+  window[cbName] = function(data) {
+    clearTimeout(timeout);
+    delete window[cbName];
+    onSuccess(data);
+  };
+  params.callback = cbName;
+  const qs = Object.keys(params).map(k => encodeURIComponent(k) + "=" + encodeURIComponent(params[k])).join("&");
+  const script = document.createElement("script");
+  script.src = API + "?" + qs;
+  script.onerror = function() {
+    clearTimeout(timeout);
+    delete window[cbName];
+    if (onError) onError("errore rete");
+  };
+  document.head.appendChild(script);
+  setTimeout(function() { if (script.parentNode) script.parentNode.removeChild(script); }, 15000);
+}
+
+function fmt(n) {
+  return "€ " + Number(n).toLocaleString("it-IT", { minimumFractionDigits: 2, maximumFractionDigits: 2 });
+}
+function fmtDate(s) {
+  if (!s) return "";
+  const d = new Date(s);
+  if (isNaN(d)) return s;
+  return d.toLocaleDateString("it-IT", { day: "2-digit", month: "2-digit", year: "numeric" });
+}
+function daysLeft() {
+  const now = new Date();
+  const last = new Date(now.getFullYear(), now.getMonth() + 1, 0).getDate();
+  return last - now.getDate() + 1;
+}
+function getCurrentMonthPrefix() {
+  const now = new Date();
+  return now.getFullYear() + "-" + String(now.getMonth()+1).padStart(2,"0");
+}
+function showToast(msg, error) {
+  const t = document.getElementById("toast");
+  t.textContent = msg;
+  t.className = "show" + (error ? " error" : "");
+  clearTimeout(t._timer);
+  t._timer = setTimeout(function() { t.className = ""; }, 3000);
+}
+function updateUI() {
+  const month = getCurrentMonthPrefix();
+  const me = expenses.filter(function(e) { return String(e.data).startsWith(month); });
+  const spent = me.reduce(function(s,e) { return s + parseFloat(e.importo||0); }, 0);
+  const residuo = BUDGET - spent;
+  const dl = daysLeft();
+  const daily = dl > 0 ? residuo / dl : 0;
+  const pct = Math.min(100, Math.round((spent/BUDGET)*100));
+  document.getElementById("stat-spent").textContent = fmt(spent);
+  document.getElementById("stat-residuo").textContent = fmt(residuo);
+  document.getElementById("stat-residuo").style.color = residuo < 0 ? "#e53e3e" : residuo < 300 ? "#d97706" : "#1c1c2e";
+  document.getElementById("stat-daily").textContent = fmt(Math.abs(daily));
+  document.getElementById("stat-daily").style.color = daily < 20 ? "#e53e3e" : "#1c1c2e";
+  document.getElementById("stat-days").textContent = dl + " gg rimasti";
+  const cardR = document.getElementById("card-residuo");
+  cardR.className = "card card-residuo" + (residuo < 0 ? " danger" : residuo < 300 ? " warning" : "");
+  const fill = document.getElementById("progress-fill");
+  fill.className = "progress-fill" + (pct>=100?" danger":pct>=80?" warning":"");
+  fill.style.width = pct + "%";
+  document.getElementById("pct-label").textContent = pct + "%";
+  const sorted = me.slice().sort(function(a,b) { return new Date(b.data)-new Date(a.data); });
+  document.getElementById("list-header").innerHTML = "Spese del mese <span>(" + sorted.length + ")</span>";
+  const listEl = document.getElementById("expense-list");
+  if (sorted.length === 0) {
+    listEl.innerHTML = '<div class="empty"><div class="empty-icon">📋</div><p>Nessuna spesa registrata questo mese.</p></div>';
+    return;
+  }
+  listEl.innerHTML = sorted.map(function(e) {
+    const ds = e.descrizione.replace(/\\/g,"\\\\").replace(/'/g,"\\'");
+    return '<div class="expense-item">' +
+      '<div class="expense-info">' +
+        '<div class="expense-desc">' + e.descrizione + '</div>' +
+        '<div class="expense-date">' + fmtDate(e.data) + '</div>' +
+      '</div>' +
+      '<div class="expense-amount">' + fmt(e.importo) + '</div>' +
+      '<button class="btn-del" onclick="askDelete(\'' + e.id + '\',\'' + ds + '\',' + e.importo + ')">✕</button>' +
+    '</div>';
+  }).join("");
+}
+function loadExpenses() {
+  document.getElementById("expense-list").innerHTML = '<div class="loading">Caricamento...</div>';
+  jsonp({ action: "get" }, function(data) {
+    expenses = Array.isArray(data) ? data : [];
+    updateUI();
+  }, function(err) {
+    showToast("Errore caricamento: " + err, true);
+    document.getElementById("expense-list").innerHTML = '<div class="empty"><p>Errore nel caricamento.</p></div>';
+  });
+}
+function addExpense() {
+  const desc = document.getElementById("inp-desc").value.trim();
+  const amt = parseFloat(document.getElementById("inp-amount").value);
+  const date = document.getElementById("inp-date").value;
+  if (!desc) return showToast("Inserisci una descrizione", true);
+  if (isNaN(amt)||amt<=0) return showToast("Inserisci un importo valido", true);
+  if (!date) return showToast("Seleziona una data", true);
+  const btn = document.getElementById("btn-add");
+  btn.disabled = true; btn.textContent = "Salvataggio...";
+  const id = Date.now().toString();
+  jsonp({ action: "add", id: id, descrizione: desc, importo: amt, data: date },
+    function() {
+      expenses.unshift({ id: id, descrizione: desc, importo: amt, data: date });
+      updateUI();
+      document.getElementById("inp-desc").value = "";
+      document.getElementById("inp-amount").value = "";
+      showToast("Spesa registrata ✓");
+      btn.disabled = false; btn.textContent = "+ Registra spesa";
+    },
+    function(err) {
+      showToast("Errore salvataggio: " + err, true);
+      btn.disabled = false; btn.textContent = "+ Registra spesa";
+    }
+  );
+}
+function askDelete(id, desc, amt) {
+  deleteId = id;
+  document.getElementById("modal-desc").innerHTML = "<strong>" + desc + "</strong> &mdash; " + fmt(parseFloat(amt));
+  document.getElementById("modal-overlay").classList.add("open");
+}
+function closeModal() { deleteId = null; document.getElementById("modal-overlay").classList.remove("open"); }
+function confirmDelete() {
+  if (!deleteId) return;
+  closeModal();
+  const id = deleteId;
+  jsonp({ action: "delete", id: id },
+    function() {
+      expenses = expenses.filter(function(e) { return e.id !== id; });
+      deleteId = null; updateUI(); showToast("Spesa rimossa");
+    },
+    function(err) { showToast("Errore rimozione: " + err, true); }
+  );
+}
+const now = new Date();
+document.getElementById("month-label").textContent = now.toLocaleDateString("it-IT",{month:"long",year:"numeric"});
+document.getElementById("inp-date").value = now.toISOString().slice(0,10);
+// Mostra subito i valori con spese zero (aggiornati dopo il caricamento)
+updateUI();
+["inp-desc","inp-amount","inp-date"].forEach(function(id) {
+  document.getElementById(id).addEventListener("keydown", function(e) { if(e.key==="Enter") addExpense(); });
+});
+loadExpenses();
+</script>
+</body>
+</html>
