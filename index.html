@@ -177,7 +177,7 @@ function showToast(msg, error) {
 }
 function updateUI() {
   const month = getCurrentMonthPrefix();
-  const me = expenses.filter(function(e) { return String(e.data).startsWith(month); });
+  const me = expenses.filter(function(e) { var d = new Date(e.data); if (isNaN(d)) return false; var em = d.getFullYear() + "-" + String(d.getMonth()+1).padStart(2,"0"); return em === month; });
   const spent = me.reduce(function(s,e) { return s + parseFloat(e.importo||0); }, 0);
   const residuo = BUDGET - spent;
   const dl = daysLeft();
