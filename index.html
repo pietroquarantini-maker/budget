@@ -272,8 +272,8 @@ document.getElementById("month-label").textContent = now.toLocaleDateString("it-
 document.getElementById("inp-date").value = now.toISOString().slice(0,10);
 // Mostra subito i valori con spese zero (aggiornati dopo il caricamento)
 updateUI();
-["inp-desc","inp-amount","inp-date"].forEach(function(id) {
-  document.getElementById(id).addEventListener("keydown", function(e) { if(e.key==="Enter") addExpense(); });
+["inp-desc","inp-amount","inp-date"].forEach(function(inputId) {
+  document.getElementById(inputId).addEventListener("keydown", function(e) { if(e.key==="Enter") addExpense(); });
 });
 loadExpenses();
 </script>
