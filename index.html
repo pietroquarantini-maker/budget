@@ -93,9 +93,13 @@ input:focus { border-color: #1c1c2e; background: #fff; }
       <div class="header-title">💶 Budget Familiare</div>
       <div class="header-sub" id="month-label"></div>
     </div>
-    <div class="header-budget" id="header-budget">
-      <div class="header-budget-label" id="header-budget-label">Budget mensile</div>
-      <div class="header-budget-amount" id="header-budget-amount">€ 1.800</div>
+    <div class="header-budget" id="header-budget-ordinarie">
+      <div class="header-budget-label">Budget mensile</div>
+      <div class="header-budget-amount">€ 1.800</div>
+    </div>
+    <div class="header-budget" id="header-budget-vestiti" style="display:none">
+      <div class="header-budget-label">Budget annuale</div>
+      <div class="header-budget-amount">€ 2.000</div>
     </div>
   </div>
 </header>
@@ -406,12 +410,12 @@ function switchTab(tab) {
   document.getElementById('section-' + tab).classList.add('active');
   document.querySelector('[onclick="switchTab(\'' + tab + '\')"]').classList.add('active');
   if (tab === 'vestiti') {
-    document.getElementById('header-budget-label').textContent = 'Budget annuale';
-    document.getElementById('header-budget-amount').textContent = '€ 2.000';
+    document.getElementById('header-budget-ordinarie').style.display = 'none';
+    document.getElementById('header-budget-vestiti').style.display = 'block';
     if (!vestitiLoaded) loadVestiti();
   } else {
-    document.getElementById('header-budget-label').textContent = 'Budget mensile';
-    document.getElementById('header-budget-amount').textContent = '€ 1.800';
+    document.getElementById('header-budget-ordinarie').style.display = 'block';
+    document.getElementById('header-budget-vestiti').style.display = 'none';
   }
 }
 
