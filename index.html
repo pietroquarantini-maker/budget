@@ -203,16 +203,21 @@ function updateUI() {
     return;
   }
   listEl.innerHTML = sorted.map(function(e) {
-    const ds = e.descrizione.replace(/\\/g,"\\\\").replace(/'/g,"\\'");
-    return '<div class="expense-item">' +
+    return '<div class="expense-item" data-id="' + e.id + '" data-desc="' + e.descrizione.replace(/"/g,'&quot;') + '" data-amt="' + e.importo + '">' +
       '<div class="expense-info">' +
         '<div class="expense-desc">' + e.descrizione + '</div>' +
         '<div class="expense-date">' + fmtDate(e.data) + '</div>' +
       '</div>' +
       '<div class="expense-amount">' + fmt(e.importo) + '</div>' +
-      '<button class="btn-del" onclick="askDelete(\'' + e.id + '\',\'' + ds + '\',' + e.importo + ')">✕</button>' +
+      '<button class="btn-del">✕</button>' +
     '</div>';
   }).join("");
+  listEl.querySelectorAll('.btn-del').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var item = btn.closest('.expense-item');
+      askDelete(item.dataset.id, item.dataset.desc, item.dataset.amt);
+    });
+  });
 }
 function loadExpenses() {
   document.getElementById("expense-list").innerHTML = '<div class="loading">Caricamento...</div>';
