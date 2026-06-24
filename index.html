@@ -69,7 +69,7 @@ input:focus { border-color: #1c1c2e; background: #fff; }
 .pin-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; color: #1c1c2e; }
 .pin-sub { font-size: 13px; color: #888; margin-bottom: 24px; }
 .pin-dots { display: flex; justify-content: center; gap: 12px; margin-bottom: 24px; }
-.pin-dot { width: 14px; height: 14px; border-radius: 50%; background: #e2e8f0; transition: background 0.2s; }
+.pin-dot { width: 11px; height: 11px; border-radius: 50%; background: #e2e8f0; transition: background 0.2s; }
 .pin-dot.filled { background: #1c1c2e; }
 .pin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
 .pin-btn { padding: 16px; border: none; border-radius: 12px; background: #f0ede8; font-size: 20px; font-weight: 700; cursor: pointer; color: #1c1c2e; transition: background 0.15s; }
@@ -313,15 +313,15 @@ function pinPress(val) {
     checkPin();
     return;
   } else {
-    if (pinInput.length >= 4) return;
+    if (pinInput.length >= 8) return;
     pinInput += val;
-    if (pinInput.length === 4) checkPin();
+    if (pinInput.length === 8) checkPin();
   }
   updateDots();
 }
 
 function updateDots() {
-  for (var i = 0; i < 4; i++) {
+  for (var i = 0; i < 8; i++) {
     document.getElementById('dot-' + i).className = 'pin-dot' + (i < pinInput.length ? ' filled' : '');
   }
 }
@@ -353,6 +353,10 @@ function checkPin() {
       <div class="pin-dot" id="dot-1"></div>
       <div class="pin-dot" id="dot-2"></div>
       <div class="pin-dot" id="dot-3"></div>
+      <div class="pin-dot" id="dot-4"></div>
+      <div class="pin-dot" id="dot-5"></div>
+      <div class="pin-dot" id="dot-6"></div>
+      <div class="pin-dot" id="dot-7"></div>
     </div>
     <div class="pin-grid">
       <button class="pin-btn" onclick="pinPress('1')">1</button>
