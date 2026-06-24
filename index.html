@@ -61,6 +61,20 @@ input:focus { border-color: #1c1c2e; background: #fff; }
 .btn-cancel { background: #f0ede8; color: #444; }
 .btn-confirm { background: #e53e3e; color: #fff; }
 .loading { text-align: center; padding: 30px; color: #aaa; font-size: 13px; }
+
+#pin-overlay { position: fixed; inset: 0; background: #1c1c2e; z-index: 999; display: flex; align-items: center; justify-content: center; }
+#pin-overlay.hidden { display: none; }
+.pin-box { background: #fff; border-radius: 20px; padding: 36px 28px; max-width: 320px; width: 90%; text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.4); }
+.pin-icon { font-size: 36px; margin-bottom: 12px; }
+.pin-title { font-size: 18px; font-weight: 700; margin-bottom: 4px; color: #1c1c2e; }
+.pin-sub { font-size: 13px; color: #888; margin-bottom: 24px; }
+.pin-dots { display: flex; justify-content: center; gap: 12px; margin-bottom: 24px; }
+.pin-dot { width: 14px; height: 14px; border-radius: 50%; background: #e2e8f0; transition: background 0.2s; }
+.pin-dot.filled { background: #1c1c2e; }
+.pin-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 10px; margin-bottom: 12px; }
+.pin-btn { padding: 16px; border: none; border-radius: 12px; background: #f0ede8; font-size: 20px; font-weight: 700; cursor: pointer; color: #1c1c2e; transition: background 0.15s; }
+.pin-btn:active { background: #1c1c2e; color: #fff; }
+.pin-error { font-size: 13px; color: #e53e3e; margin-top: 8px; min-height: 20px; }
 </style>
 </head>
 <body>
@@ -262,9 +276,8 @@ function askDelete(id, desc, amt) {
 function closeModal() { deleteId = null; document.getElementById("modal-overlay").classList.remove("open"); }
 function confirmDelete() {
   if (!deleteId) return;
-  const id = deleteId; 
-  console.log("DELETE ID:", id);
   closeModal();
+  const id = deleteId; console.log("DELETE ID:", id);
   jsonp({ action: "delete", id: id },
     function() {
       expenses = expenses.filter(function(e) { return e.id !== id; });
@@ -281,7 +294,82 @@ updateUI();
 ["inp-desc","inp-amount","inp-date"].forEach(function(inputId) {
   document.getElementById(inputId).addEventListener("keydown", function(e) { if(e.key==="Enter") addExpense(); });
 });
-loadExpenses();
+
+// PIN salvato come hash SHA-256 (non reversibile)
+const CORRECT_PIN_HASH = "2668e44694c63d0bb9b2c5ed35f1826dd703c477b61caa009439dcd2c5ec5002";
+
+async function hashPin(pin) {
+  const msgBuffer = new TextEncoder().encode(pin);
+  const hashBuffer = await crypto.subtle.digest('SHA-256', msgBuffer);
+  const hashArray = Array.from(new Uint8Array(hashBuffer));
+  return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+}
+var pinInput = "";
+
+function pinPress(val) {
+  if (val === 'del') {
+    pinInput = pinInput.slice(0, -1);
+  } else if (val === 'ok') {
+    checkPin();
+    return;
+  } else {
+    if (pinInput.length >= 4) return;
+    pinInput += val;
+    if (pinInput.length === 4) checkPin();
+  }
+  updateDots();
+}
+
+function updateDots() {
+  for (var i = 0; i < 4; i++) {
+    document.getElementById('dot-' + i).className = 'pin-dot' + (i < pinInput.length ? ' filled' : '');
+  }
+}
+
+function checkPin() {
+  hashPin(pinInput).then(function(hash) {
+    if (hash === CORRECT_PIN_HASH) {
+      document.getElementById('pin-overlay').classList.add('hidden');
+      loadExpenses();
+    } else {
+      document.getElementById('pin-error').textContent = 'PIN errato, riprova';
+      pinInput = "";
+      updateDots();
+      setTimeout(function() { document.getElementById('pin-error').textContent = ''; }, 2000);
+    }
+  });
+}
+
+// loadExpenses chiamato dopo PIN
 </script>
+
+<div id="pin-overlay">
+  <div class="pin-box">
+    <div class="pin-icon">🔒</div>
+    <div class="pin-title">Budget Familiare</div>
+    <div class="pin-sub">Inserisci il PIN per accedere</div>
+    <div class="pin-dots">
+      <div class="pin-dot" id="dot-0"></div>
+      <div class="pin-dot" id="dot-1"></div>
+      <div class="pin-dot" id="dot-2"></div>
+      <div class="pin-dot" id="dot-3"></div>
+    </div>
+    <div class="pin-grid">
+      <button class="pin-btn" onclick="pinPress('1')">1</button>
+      <button class="pin-btn" onclick="pinPress('2')">2</button>
+      <button class="pin-btn" onclick="pinPress('3')">3</button>
+      <button class="pin-btn" onclick="pinPress('4')">4</button>
+      <button class="pin-btn" onclick="pinPress('5')">5</button>
+      <button class="pin-btn" onclick="pinPress('6')">6</button>
+      <button class="pin-btn" onclick="pinPress('7')">7</button>
+      <button class="pin-btn" onclick="pinPress('8')">8</button>
+      <button class="pin-btn" onclick="pinPress('9')">9</button>
+      <button class="pin-btn" onclick="pinPress('del')" style="font-size:16px">⌫</button>
+      <button class="pin-btn" onclick="pinPress('0')">0</button>
+      <button class="pin-btn" onclick="pinPress('ok')" style="background:#1c1c2e;color:#fff;font-size:14px">OK</button>
+    </div>
+    <div class="pin-error" id="pin-error"></div>
+  </div>
+</div>
 </body>
 </html>
