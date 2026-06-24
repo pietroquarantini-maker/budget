@@ -75,6 +75,12 @@ input:focus { border-color: #1c1c2e; background: #fff; }
 .pin-btn { padding: 16px; border: none; border-radius: 12px; background: #f0ede8; font-size: 20px; font-weight: 700; cursor: pointer; color: #1c1c2e; transition: background 0.15s; }
 .pin-btn:active { background: #1c1c2e; color: #fff; }
 .pin-error { font-size: 13px; color: #e53e3e; margin-top: 8px; min-height: 20px; }
+
+.tabs { display: flex; gap: 0; margin-bottom: 16px; background: #e8e4de; border-radius: 10px; padding: 3px; }
+.tab-btn { flex: 1; padding: 9px; border: none; border-radius: 8px; font-size: 13px; font-weight: 700; cursor: pointer; background: transparent; color: #888; transition: all 0.2s; }
+.tab-btn.active { background: #fff; color: #1c1c2e; box-shadow: 0 1px 4px rgba(0,0,0,0.1); }
+.section { display: none; }
+.section.active { display: block; }
 </style>
 </head>
 <body>
@@ -91,6 +97,13 @@ input:focus { border-color: #1c1c2e; background: #fff; }
   </div>
 </header>
 <main>
+  <div class="tabs">
+    <button class="tab-btn active" onclick="switchTab('ordinarie')">🏠 Spese Ordinarie</button>
+    <button class="tab-btn" onclick="switchTab('vestiti')">👕 Vestiti</button>
+  </div>
+
+  <!-- SEZIONE ORDINARIE -->
+  <div class="section active" id="section-ordinarie">
   <div class="stats">
     <div class="card">
       <div class="card-label">Speso</div>
@@ -121,6 +134,43 @@ input:focus { border-color: #1c1c2e; background: #fff; }
   </div>
   <div class="list-header" id="list-header">Spese del mese</div>
   <div id="expense-list"><div class="loading">Caricamento...</div></div>
+
+  </div><!-- end section-ordinarie -->
+
+  <!-- SEZIONE VESTITI -->
+  <div class="section" id="section-vestiti">
+    <div class="stats">
+      <div class="card">
+        <div class="card-label">Speso</div>
+        <div class="card-value" id="v-stat-spent">€ 0,00</div>
+      </div>
+      <div class="card card-residuo" id="v-card-residuo">
+        <div class="card-label">Residuo Anno</div>
+        <div class="card-value" id="v-stat-residuo">€ 2.000,00</div>
+      </div>
+      <div class="card">
+        <div class="card-label">Al mese</div>
+        <div class="card-value" id="v-stat-monthly">€ —</div>
+        <div class="card-sub" id="v-stat-months"></div>
+      </div>
+    </div>
+    <div class="card progress-card">
+      <div class="progress-header"><span>Utilizzo budget annuo</span><span id="v-pct-label">0%</span></div>
+      <div class="progress-track"><div class="progress-fill" id="v-progress-fill" style="width:0%"></div></div>
+    </div>
+    <div class="card form-card">
+      <h2>Aggiungi spesa vestiti</h2>
+      <input type="text" id="v-inp-desc" placeholder="Descrizione (es. Scarpe bambini)" style="margin-bottom:8px">
+      <div class="form-row">
+        <input type="number" id="v-inp-amount" placeholder="Importo €" min="0" step="0.01" style="flex:1">
+        <input type="date" id="v-inp-date" style="flex:1">
+      </div>
+      <button class="btn-add" id="v-btn-add" onclick="addVestiti()">+ Registra spesa</button>
+    </div>
+    <div class="list-header" id="v-list-header">Spese vestiti anno</div>
+    <div id="v-expense-list"><div class="loading">Caricamento...</div></div>
+  </div><!-- end section-vestiti -->
+
 </main>
 <div id="toast"></div>
 <div id="modal-overlay">
@@ -134,7 +184,7 @@ input:focus { border-color: #1c1c2e; background: #fff; }
   </div>
 </div>
 <script>
-const API = "https://script.google.com/macros/s/AKfycbyemNQ1HjBqgqtmFe0vMpPYP1OxqXEvoFfl0cbkkw9u3UOr5KbRyc588bOhyCAxszor/exec";
+const API = "https://script.google.com/macros/s/AKfycbww6fEpdEk7JK6QqRf4I_WkDkUrTGGuN8-cv9Z6bCRrMtL-SwZntrtYzaGMYQR1nt9n/exec";
 const BUDGET = 1800;
 let expenses = [];
 let deleteId = null;
@@ -341,6 +391,147 @@ function checkPin() {
 }
 
 // loadExpenses chiamato dopo PIN
+
+// ---- VESTITI ----
+const BUDGET_VESTITI = 2000;
+var expensesVestiti = [];
+var vestitiLoaded = false;
+
+function switchTab(tab) {
+  document.querySelectorAll('.tab-btn').forEach(function(b) { b.classList.remove('active'); });
+  document.querySelectorAll('.section').forEach(function(s) { s.classList.remove('active'); });
+  document.getElementById('section-' + tab).classList.add('active');
+  document.querySelector('[onclick="switchTab(\'' + tab + '\')"]').classList.add('active');
+  if (tab === 'vestiti' && !vestitiLoaded) {
+    loadVestiti();
+  }
+}
+
+function getCurrentYearPrefix() {
+  return new Date().getFullYear().toString();
+}
+
+function monthsLeftInYear() {
+  return 12 - new Date().getMonth();
+}
+
+function updateVestitiUI() {
+  const year = getCurrentYearPrefix();
+  const ye = expensesVestiti.filter(function(e) { return String(e.data).startsWith(year); });
+  const spent = ye.reduce(function(s,e) { return s + parseFloat(e.importo||0); }, 0);
+  const residuo = BUDGET_VESTITI - spent;
+  const ml = monthsLeftInYear();
+  const monthly = ml > 0 ? residuo / ml : 0;
+  const pct = Math.min(100, Math.round((spent/BUDGET_VESTITI)*100));
+
+  document.getElementById("v-stat-spent").textContent = fmt(spent);
+  document.getElementById("v-stat-residuo").textContent = fmt(residuo);
+  document.getElementById("v-stat-residuo").style.color = residuo < 0 ? "#e53e3e" : residuo < 200 ? "#d97706" : "#1c1c2e";
+  document.getElementById("v-stat-monthly").textContent = fmt(monthly);
+  document.getElementById("v-stat-monthly").style.color = monthly < 50 ? "#e53e3e" : "#1c1c2e";
+  document.getElementById("v-stat-months").textContent = ml + " mesi rimasti";
+
+  var cardR = document.getElementById("v-card-residuo");
+  cardR.className = "card card-residuo" + (residuo < 0 ? " danger" : residuo < 200 ? " warning" : "");
+  var fill = document.getElementById("v-progress-fill");
+  fill.className = "progress-fill" + (pct>=100?" danger":pct>=80?" warning":"");
+  fill.style.width = pct + "%";
+  document.getElementById("v-pct-label").textContent = pct + "%";
+
+  var sorted = ye.slice().sort(function(a,b) { return new Date(b.data)-new Date(a.data); });
+  document.getElementById("v-list-header").innerHTML = "Spese vestiti anno <span>(" + sorted.length + ")</span>";
+  var listEl = document.getElementById("v-expense-list");
+  if (sorted.length === 0) {
+    listEl.innerHTML = '<div class="empty"><div class="empty-icon">👕</div><p>Nessuna spesa registrata quest\'anno.</p></div>';
+    return;
+  }
+  listEl.innerHTML = sorted.map(function(e) {
+    return '<div class="expense-item" data-id="' + e.id + '" data-desc="' + e.descrizione.replace(/"/g,'&quot;') + '" data-amt="' + e.importo + '">' +
+      '<div class="expense-info">' +
+        '<div class="expense-desc">' + e.descrizione + '</div>' +
+        '<div class="expense-date">' + fmtDate(e.data) + '</div>' +
+      '</div>' +
+      '<div class="expense-amount">' + fmt(e.importo) + '</div>' +
+      '<button class="btn-del">✕</button>' +
+    '</div>';
+  }).join("");
+  listEl.querySelectorAll('.btn-del').forEach(function(btn) {
+    btn.addEventListener('click', function() {
+      var item = btn.closest('.expense-item');
+      askDeleteVestiti(item.dataset.id, item.dataset.desc, item.dataset.amt);
+    });
+  });
+}
+
+function loadVestiti() {
+  document.getElementById("v-expense-list").innerHTML = '<div class="loading">Caricamento...</div>';
+  jsonp({ action: "get", foglio: "vestiti" }, function(data) {
+    expensesVestiti = Array.isArray(data) ? data : [];
+    vestitiLoaded = true;
+    updateVestitiUI();
+  }, function(err) {
+    showToast("Errore caricamento vestiti", true);
+  });
+}
+
+function addVestiti() {
+  var desc = document.getElementById("v-inp-desc").value.trim();
+  var amt = parseFloat(document.getElementById("v-inp-amount").value);
+  var date = document.getElementById("v-inp-date").value;
+  if (!desc) return showToast("Inserisci una descrizione", true);
+  if (isNaN(amt)||amt<=0) return showToast("Inserisci un importo valido", true);
+  if (!date) return showToast("Seleziona una data", true);
+  var btn = document.getElementById("v-btn-add");
+  btn.disabled = true; btn.textContent = "Salvataggio...";
+  var id = Date.now().toString();
+  jsonp({ action: "add", foglio: "vestiti", id: id, descrizione: desc, importo: amt, data: date },
+    function() {
+      expensesVestiti.unshift({ id: id, descrizione: desc, importo: amt, data: date });
+      updateVestitiUI();
+      document.getElementById("v-inp-desc").value = "";
+      document.getElementById("v-inp-amount").value = "";
+      showToast("Spesa registrata ✓");
+      btn.disabled = false; btn.textContent = "+ Registra spesa";
+    },
+    function(err) {
+      showToast("Errore salvataggio: " + err, true);
+      btn.disabled = false; btn.textContent = "+ Registra spesa";
+    }
+  );
+}
+
+var deleteVestitiId = null;
+function askDeleteVestiti(id, desc, amt) {
+  deleteVestitiId = id;
+  document.getElementById("modal-desc").innerHTML = "<strong>" + desc + "</strong> &mdash; " + fmt(parseFloat(amt));
+  document.getElementById("modal-overlay").dataset.mode = "vestiti";
+  document.getElementById("modal-overlay").classList.add("open");
+}
+
+// Override confirmDelete to handle both modes
+var _origConfirmDelete = confirmDelete;
+confirmDelete = function() {
+  if (document.getElementById("modal-overlay").dataset.mode === "vestiti") {
+    if (!deleteVestitiId) return;
+    var id = deleteVestitiId;
+    closeModal();
+    jsonp({ action: "delete", foglio: "vestiti", id: id },
+      function() {
+        expensesVestiti = expensesVestiti.filter(function(e) { return e.id !== id; });
+        deleteVestitiId = null; updateVestitiUI(); showToast("Spesa rimossa");
+      },
+      function() { showToast("Errore rimozione", true); }
+    );
+  } else {
+    _origConfirmDelete();
+  }
+};
+
+document.getElementById("v-inp-date").value = new Date().toISOString().slice(0,10);
+["v-inp-desc","v-inp-amount","v-inp-date"].forEach(function(inputId) {
+  document.getElementById(inputId).addEventListener("keydown", function(e) { if(e.key==="Enter") addVestiti(); });
+});
+
 </script>
 
 <div id="pin-overlay">
