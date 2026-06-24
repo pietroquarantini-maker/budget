@@ -264,7 +264,7 @@ function confirmDelete() {
   if (!deleteId) return;
   const id = deleteId; 
   console.log("DELETE ID:", id);
-  consoleModal();
+  closeModal();
   jsonp({ action: "delete", id: id },
     function() {
       expenses = expenses.filter(function(e) { return e.id !== id; });
