@@ -258,7 +258,7 @@ function closeModal() { deleteId = null; document.getElementById("modal-overlay"
 function confirmDelete() {
   if (!deleteId) return;
   closeModal();
-  const id = deleteId;
+  const id = deleteId; console.log("DELETE ID:", id);
   jsonp({ action: "delete", id: id },
     function() {
       expenses = expenses.filter(function(e) { return e.id !== id; });
